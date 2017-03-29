@@ -1801,7 +1801,7 @@ time_set_utc_offset(VALUE time, VALUE off)
 }
 
 static void
-vtm_add_offset(struct vtm *vtm, VALUE off)
+vtm_add_offset(struct time_object *time, struct vtm *vtm, VALUE off)
 {
     int sign;
     VALUE subsec, v;
@@ -1892,6 +1892,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = subv(vtm->year, INT2FIX(1));
+                RB_OBJ_WRITE(time, &vtm->year, vtm->year);
                 vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
@@ -1912,6 +1913,7 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
             int leap = leap_year_v_p(vtm->year);
             if (vtm->mon == 12 && vtm->mday == 31) {
                 vtm->year = addv(vtm->year, INT2FIX(1));
+                RB_OBJ_WRITE(time, &vtm->year, vtm->year);
                 vtm->mon = 1; /* January */
                 vtm->mday = 1;
                 vtm->yday = 1;
@@ -2017,7 +2019,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     if (!NIL_P(vtm.utc_offset)) {
         VALUE off = vtm.utc_offset;
-        vtm_add_offset(&vtm, neg(off));
+        vtm_add_offset(tobj, &vtm, neg(off));
         vtm.utc_offset = Qnil;
         tobj->timew = timegmw(&vtm);
         return time_set_utc_offset(time, off);
@@ -3458,7 +3460,7 @@ time_fixoff(VALUE time)
        rb_raise(rb_eArgError, "gmtime error");
 
     tobj->vtm = vtm;
-    vtm_add_offset(&tobj->vtm, off);
+    vtm_add_offset(tobj, &tobj->vtm, off);
 
     tobj->tm_got = 1;
     TIME_SET_FIXOFF(tobj, off);
