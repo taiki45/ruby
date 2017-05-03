@@ -1094,6 +1094,7 @@ init_leap_second_info(void)
         vtm.min = result.tm_min;
         vtm.sec = result.tm_sec;
         vtm.subsecx = INT2FIX(0);
+        RB_OBJ_WRITE(time, &vtm->subsecx, vtm->subsecx);
         vtm.utc_offset = INT2FIX(0);
 
         timew = timegmw_noleapsecond(&vtm);
@@ -4632,6 +4633,7 @@ time_mload(VALUE time, VALUE str)
 	gmt        = (int)((p >> 30) & 0x1);
 
 	vtm.year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+	RB_OBJ_WRITE(time, &vtm->year, vtm->year);
 	vtm.mon  = ((int)(p >> 10) & 0xf) + 1;
 	vtm.mday = (int)(p >>  5) & 0x1f;
 	vtm.hour = (int) p        & 0x1f;
@@ -4647,9 +4649,12 @@ time_mload(VALUE time, VALUE str)
 
 
         vtm.subsecx = mulquov(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000));
+        RB_OBJ_WRITE(time, &vtm->subsecx, vtm->subsecx);
         if (nano_num != Qnil) {
             VALUE nano = quov(num_exact(nano_num), num_exact(nano_den));
             vtm.subsecx = addv(vtm.subsecx, mulquov(nano, INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
+            RB_OBJ_WRITE(time, &vtm->subsecx, vtm->subsecx);
+        if (nano_num != Qnil) {
         }
         else if (submicro != Qnil) { /* for Ruby 1.9.1 compatibility */
             unsigned char *ptr;
@@ -4669,6 +4674,7 @@ time_mload(VALUE time, VALUE str)
                 nsec += digit;
             }
             vtm.subsecx = addv(vtm.subsecx, mulquov(LONG2FIX(nsec), INT2FIX(TIME_SCALE), LONG2FIX(1000000000)));
+            RB_OBJ_WRITE(time, &vtm->subsecx, vtm->subsecx);
 end_submicro: ;
         }
         timew = timegmw(&vtm);
